@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include <unistd.h>
 #include <signal.h>
 #include "socket.c"
 
@@ -367,7 +366,7 @@ static int bench(void)
         bytes  = 0;
 
         for(int child_speed, child_failed, child_bytes;;) {
-            if(fscanf(file_read, "%d %d %d", &child_speed, &child_failed, &child_bytes) < 2) {
+            if(fscanf(file_read, "%d %d %d", &child_speed, &child_failed, &child_bytes) < 3) {
                 fprintf(stderr, "Some of our childrens died.\n");
                 break;
             }

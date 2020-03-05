@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include <netdb.h>
 
 static int Socket(const char *host, int client_port)
@@ -44,6 +45,7 @@ static int Socket(const char *host, int client_port)
         return sock_fd;
     }
     if(connect(sock_fd, (struct sockaddr *)&addr_host, sizeof(addr_host)) < 0) {
+        close(sock_fd);
         return -1;
     }
     return sock_fd;
