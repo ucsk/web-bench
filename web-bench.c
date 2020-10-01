@@ -1,5 +1,5 @@
 /*
- * Modified by upbin 2020-03-05
+ * Modified by ucsk 2020-03-05
  * (C) Radim Kolar 1997-2004
  * This is free software, see GNU Public License version 2 for details.
  *
@@ -31,11 +31,11 @@
 
 int method = METHOD_GET;        // Default request method
 
-#define MAXHOSTNAMELEN 64
-#define URLTHRESHOLD 1500
+#define MAX_HOSTNAME_LEN 64
+#define URL_THRESHOLD 1500
 #define REQUEST_SIZE 2048
 
-char host[MAXHOSTNAMELEN];      // Server IP address
+char host[MAX_HOSTNAME_LEN];      // Server IP address
 char request[REQUEST_SIZE];     // HTTP request sent to the server
 
 int http10 = 1;                 // http/0.9 - 0 | http/1.0 - 1 | http/1.1 - 2
@@ -70,7 +70,7 @@ static void alarm_handler(void) { timer_expired = 1; }
 static int bench(void);
 
 // Child process stress test function.
-static void bench_core(const char *host, int port, char *request);
+static void bench_core(const char *host_t, int port, char *request_t);
 
 // Tips for using functions: Note that the server-side URL should be given
 //   at the end of the command line.
@@ -131,7 +131,8 @@ int main(int argc, char *argv[])
 
     //  Parsing command line argument options.
     const char *optstring = "912frp:c:t:Vh?";
-    for(int opt = 0; (opt = getopt_long(argc, argv, optstring, long_options, NULL)) != EOF;) {
+    int opt = 0;
+    for(; (opt = getopt_long(argc, argv, optstring, long_options, NULL)) != EOF;) {
         switch(opt) {
             case  0 : break;
 
@@ -142,8 +143,8 @@ int main(int argc, char *argv[])
             case '1': http10 = 1; break;
             case '2': http10 = 2; break;
 
-            case 't': benchTime = !atoi(optarg) ? 30 : atoi(optarg); break;
-            case 'c': clients   = !atoi(optarg) ?  1 : atoi(optarg); break;
+            case 't': benchTime = (!atoi(optarg) ? 30 : atoi(optarg)); break;
+            case 'c': clients   = (!atoi(optarg) ?  1 : atoi(optarg)); break;
             case 'p': {
                 char *tmp_proxyport = strrchr(optarg, ':');
                 if(tmp_proxyport == NULL) {
@@ -182,7 +183,7 @@ int main(int argc, char *argv[])
     //  Copyright
     fprintf(stderr, "WebBench - Simple Web Benchmark "PROGRAM_VERSION"\n"
         "Copyright (c) Radim Kolar 1997-2004, GPL Open Source Software.\n"
-        "Modified by upbin 2020-03-05\n");
+        "Modified by ucsk 2020-03-05.\n");
 
     // Construct the HTTP request message body.
     build_request(argv[optind]);
@@ -246,7 +247,7 @@ static void build_request(const char *URL)
         exit(2);
     }
     // Preventing buffer overflows.
-    if(URLTHRESHOLD < strlen(URL)) {
+    if(URL_THRESHOLD < strlen(URL)) {
         fprintf(stderr, "URL is too long.\n");
         exit(2);
     }
@@ -256,7 +257,7 @@ static void build_request(const char *URL)
     }
 
     // Get the domain name address subscript based on the URL delimiter("://").
-    int i = strstr(URL, "://") - URL + 3;
+    int i = (int)(strstr(URL, "://") - URL) + 3;
 
     // Delimiter at the end of the URL requires '/'.
     if(strchr(URL + i, '/') == NULL) {
@@ -266,14 +267,14 @@ static void build_request(const char *URL)
 
     if(proxy_host == NULL) { // No proxy server used.
         // Determine if the URL has a port number.
-        bzero(host, MAXHOSTNAMELEN);
+        bzero(host, MAX_HOSTNAME_LEN);
         if(index(URL + i, ':') != NULL && index(URL + i, ':') < index(URL + i, '/')) {
             // Copy host address.
             strncpy(host, URL + i, strchr(URL + i, ':') - URL - i);
             // Copy host port.
             char tmp_port[10]; bzero(tmp_port, 10);
             strncpy(tmp_port, index(URL + i, ':') + 1, strchr(URL + i, '/') - index(URL + i, ':') - 1);
-            proxy_port = !atoi(tmp_port) ? 80 : atoi(tmp_port);
+            proxy_port = (!atoi(tmp_port) ? 80 : atoi(tmp_port));
         } else {
             strncpy(host, URL + i, strcspn(URL + i, "/"));
         }
@@ -324,9 +325,10 @@ static int bench(void)
         return 3;
     }
 
-    // fork childs(Concurrency)
+    // fork childes(Concurrency)
     pid_t pid = 0;
-    for(int i = 0; i < clients; ++i) {
+    int i = 0;
+    for(;i < clients; ++i) {
         if((pid = fork()) <= 0) {
             sleep(1);
             break;
@@ -365,9 +367,10 @@ static int bench(void)
         failed = 0;
         bytes  = 0;
 
-        for(int child_speed, child_failed, child_bytes;;) {
+        int child_speed, child_failed, child_bytes;
+        while(1) {
             if(fscanf(file_read, "%d %d %d", &child_speed, &child_failed, &child_bytes) < 3) {
-                fprintf(stderr, "Some of our childrens died.\n");
+                fprintf(stderr, "Some of our children died.\n");
                 break;
             }
             speed  += child_speed;
@@ -381,14 +384,14 @@ static int bench(void)
         fclose(file_read);
 
         // Output after the parent process counts the results.
-        printf("\nSpeed=%d pages/min, %d bytes/sec.\nRequests: %d successed, %d failed.\n",
-               (int)((speed+failed)/(benchTime/60.0f)), (int)(bytes/(float)benchTime), speed, failed);
+        printf("\nSpeed = %d(pages/min), %d (bytes/sec).\nRequests: %d succeeded, %d failed.\n",
+               (int)((speed+failed)/(benchTime/60.0)), bytes/benchTime, speed, failed);
     }
 
     return 0;
 }
 
-static void bench_core(const char *host, const int port, char *request)
+static void bench_core(const char *host_t, const int port, char *request_t)
 {
     // setup alarm signal handler.
     struct sigaction signal;
@@ -403,7 +406,7 @@ static void bench_core(const char *host, const int port, char *request)
     // Signal back to the process if the time limit is reached.
     alarm(benchTime);
 
-    const unsigned int write_len = strlen(request);
+    const unsigned int write_len = strlen(request_t);
     NEXT_TRY: while(1) {
         // After reaching the time limit and calling alarm_handler.
         if(timer_expired) {
@@ -412,14 +415,14 @@ static void bench_core(const char *host, const int port, char *request)
         }
 
         // establish connection.
-        int conn_fd = Socket(host, port);
+        int conn_fd = Socket(host_t, port);
         if(conn_fd < 0) {
             ++failed;
             continue;
         }
 
         // Writing data to the server failed.
-        if(write_len != write(conn_fd, request, write_len)) {
+        if(write_len != write(conn_fd, request_t, write_len)) {
             ++failed;
             close(conn_fd);
             continue;
@@ -436,8 +439,8 @@ static void bench_core(const char *host, const int port, char *request)
         if(force == 0) {
             while(1) {
                 if(timer_expired) { break; }
-                char buf[URLTHRESHOLD];
-                int read_len = read(conn_fd, buf, URLTHRESHOLD);
+                char buf[URL_THRESHOLD];
+                int read_len = read(conn_fd, buf, URL_THRESHOLD);
                 if(read_len < 0) {
                     ++failed;
                     close(conn_fd);

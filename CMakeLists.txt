@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
-project(WebBench C)
+project(web-bench C)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 90)
 
-add_executable(WebBench webbench.c)
-target_sources(WebBench PRIVATE socket.c)
+add_executable(web-bench web-bench.c)
+target_sources(web-bench PRIVATE socket.c)

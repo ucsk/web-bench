@@ -1,7 +1,7 @@
 /* $Id: socket.c 1.1 1995/01/01 07:11:14 cthuang Exp $
  *
  * This module has been modified by Radim Kolar for OS/2 emx.
- * This module has been modified by upbin in Cygwin 3.1.2-1.
+ * This module has been modified by ucsk in Cygwin 3.1.2-1.
  */
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
